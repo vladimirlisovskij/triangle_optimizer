@@ -295,17 +295,4 @@ class triOpt():
         if plot != False:
             self.__PLOT(kord, c, func, plot[0], plot[1], resx, resy)
         return res
-        
-optimizer = triOpt()
-
-kord = np.array([
-    [0,1],
-    [-1,-1],
-    [1,-1]
-])
-
-func = lambda x,y:(x + 1)**2 + y**2
-func_sp = (lambda x,y:(x + 1)**2 + y**2 - x + sp.exp(x) + sp.exp(y + 1))(sp.symbols('x'),sp.symbols('y'))
-
-print(optimizer.opt(kord = kord, func = func, Time = True))
 
