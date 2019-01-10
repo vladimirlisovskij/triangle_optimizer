@@ -228,7 +228,7 @@ class triOpt():
             else:
                 return [a, c, n]
 
-    def opt(self, kord, func, func_sp = None, m_const = None, l_const = None, E = 0.001, plot = False, Time = False):
+    def opt(self, kord, func, func_sp = None, m_const = None, l_const = None, E = 0.001, plot = False, info = False):
 
         """
         kord -- массив координат вершин треугольника;
@@ -240,7 +240,7 @@ class triOpt():
         plot -- построение графиков;
             первый элемент bool -- стоит ли делать заливку
             второй элемент int -- кучность точек
-        Time -- время работы.
+        info -- дополнительная информация.
         """
 
     
@@ -248,8 +248,9 @@ class triOpt():
         c = kord[1]
         b = kord[2]
         
-        if Time == True:
+        if info == True:
             start_time = time.time()
+            t_meab = []
         
         if func_sp == None:
             func_sp = func(sp.symbols('x'),sp.symbols('y'))
@@ -280,7 +281,8 @@ class triOpt():
         e = (E*l_const)/(4*(m_const*c_const + l_const)*n)
         
         resx,resy = [],[]
-        
+        if info == True:
+            t1 = time.time()
         for i in range(n):
             t = self.__step(a,b,c, func,self.__GS, e, gr)
             a = t[0]
@@ -288,10 +290,21 @@ class triOpt():
             c = t[2]
             resx.append(c[0])
             resy.append(c[1])
-        res  = c
-        if Time == True:   
-            time_res = float(time.time() - start_time)
-            res = [c,time_res]
+        if info == True:
+            T = time.time()
+            t2 = float(T - t1)/n               
+            time_res = float(T - start_time)
+        res  = {}
+        res['кординаты точки'] = c
+        res['значение функции'] = func(c[0],c[1])
+        if info == True:   
+            res['суммарное время'] = time_res
+            res['среднее время итерации'] = t2
+            res['константа L'] = l_const
+            res['константа M'] = m_const
+            res['колличество шагов'] = n
+            res['точность одномерных задач'] = e
+            
         if plot != False:
             self.__PLOT(kord, c, func, plot[0], plot[1], resx, resy)
         return res
