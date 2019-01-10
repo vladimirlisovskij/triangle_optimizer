@@ -250,7 +250,6 @@ class triOpt():
         
         if info == True:
             start_time = time.time()
-            t_meab = []
         
         if func_sp == None:
             func_sp = func(sp.symbols('x'),sp.symbols('y'))
