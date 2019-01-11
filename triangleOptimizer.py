@@ -1,47 +1,59 @@
-if __name__ == '__main__': 
-    import matplotlib.pyplot as plt
-    import matplotlib.colors as clr
-    import matplotlib.cm as cm
-    from mpl_toolkits.mplot3d import Axes3D
-    import numpy as np
-    import sympy as sp
-    from math import sqrt, ceil, log
-    import time
+import matplotlib.pyplot as plt
+import matplotlib.colors as clr
+import matplotlib.cm as cm
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import sympy as sp
+from math import sqrt, ceil, log
+import time
 
 
 class triOpt():
     def __GS(self, a,b,e,f):
         if a[0] == b[0]: 
+
             if a[1] > b[1]:
                 a,b = b,a
+
             A = a[1]
             B = b[1]
-            F = (1 + sqrt(5))/2    
+
+            F = (1 + sqrt(5))/2  
+
             while (B-A)/2 >= e:            
                 y1 = B - (B-A)/F
                 y2 = A + (B-A)/F
+
                 if f(a[0],y1) >= f(a[0],y2):
                     A = y1
                 else:
                     B = y2
+
             return [a[0],(A+B)/2]
         else:
+
             if a[0] > b[0]:
                 a,b = b,a
+
             k = (a[1] - b[1])/(a[0] - b[0])
             bc = a[1] - a[0]*k
+
             A = a[0]
             B = b[0]
-            F = (1 + sqrt(5))/2    
+
+            F = (1 + sqrt(5))/2 
+
             while (B-A)/2 >= e:
                 x1 = B - (B-A)/F
                 y1 = x1*k + bc
                 x2 = A + (B-A)/F
                 y2 = x2*k + bc
+
                 if f(x1, y1) >= f(x2, y2):
                     A = x1
                 else:
                     B = x2
+                    
             return [(A+B)/2, ((A+B)/2)*k + bc]
     
     def __PLOT(self, kord, dot, func, color, n, dx, dy):
@@ -63,6 +75,7 @@ class triOpt():
         if a[0] != b[0]:
             kAB = (a[1] - b[1])/(a[0] - b[0])
             bAB = a[1] - kAB*a[0]
+
             if kAB*c[0] + bAB < c[1]:
                 ans['AB'] = "Yfalse"
             else:
@@ -70,6 +83,7 @@ class triOpt():
         else:        
             kAB = False
             bAB = False
+
             if a[0] < c[0]:
                 ans['AB'] = "xfalse"
             else:
@@ -78,6 +92,7 @@ class triOpt():
         if a[0] != c[0]:
             kAC = (a[1] - c[1])/(a[0] - c[0])
             bAC = a[1] - kAC*a[0]
+
             if kAC*b[0] + bAC < b[1]:
                 ans['AC'] = "Yfalse"
             else:
@@ -85,6 +100,7 @@ class triOpt():
         else:
             kAC = False
             bAC = False
+
             if a[0] < b[0]:
                 ans['AC'] = "xfalse"
             else:
@@ -92,14 +108,16 @@ class triOpt():
 
         if c[0] != b[0]: 
             kBC = (c[1] - b[1])/(c[0] - b[0])
-            bBC = c[1] - kBC*c[0]        
+            bBC = c[1] - kBC*c[0]  
+
             if kBC*a[0] + bBC < a[1]:
                 ans['BC'] = "Yfalse"
             else:
                 ans['BC'] = "Ytrue"
         else:
             kBC = False
-            bBC = False        
+            bBC = False   
+
             if c[0] < a[0]:
                 ans['BC'] = "xfalse"
             else:
@@ -116,6 +134,7 @@ class triOpt():
             for Y in np.linspace (yMIN, yMAX, n):
                 if ans["AB"] == 'Ytrue' or ans["AB"] == 'Yfalse':
                     ytst = kAB*X + bAB
+
                     if ans["AB"] == "Ytrue":
                         if ytst < Y:
                             continue
@@ -133,6 +152,7 @@ class triOpt():
                             
                 if ans["BC"] == 'Ytrue' or ans["BC"] == 'Yfalse':
                     ytst = kBC*X + bBC
+
                     if ans["BC"] == "Ytrue":
                         if ytst < Y:
                             continue
@@ -163,6 +183,7 @@ class triOpt():
                     elif ans["AC"] == "xfalse":
                         if a[0] > X:
                             continue 
+
                 xe.append(X)
                 ye.append(Y)
                 ze.append(func(X,Y))
@@ -198,26 +219,31 @@ class triOpt():
         AB = sqrt( (a[0] - b[0])**2 + (a[1] - b[1])**2 )
         AC = sqrt( (a[0] - c[0])**2 + (a[1] - c[1])**2 )
         BC = sqrt( (c[0] - b[0])**2 + (c[1] - b[1])**2 )
-        g = 0
+
         if AC == max(AB,AC,BC):
-            g = 1
             b,c = c,b
+
         if BC == max(AB,AC,BC):
-            g = 2
             a,c = c,a
+
         AB = sqrt( (a[0] - b[0])**2 + (a[1] - b[1])**2 )
         AC = sqrt( (a[0] - c[0])**2 + (a[1] - c[1])**2 )
         BC = sqrt( (c[0] - b[0])**2 + (c[1] - b[1])**2 )
         
         n = [(a[0] + b[0])/2,(a[1]+b[1])/2]
         x = opt(n,c,e,func)
+
         grkord = self.__grd(gr,x)
+
         if grkord == [0,0]:
             return [None, None, n]
+
         gror = [x[0] + grkord[0],x[1] + grkord[1]]
+
         if c[0] != n[0]:
             k = (c[1] - n[1])/(c[0] - n[0])
             B = n[1] - n[0] * k
+
             if ((gror[0]*k + B)<gror[1] and (a[0] * k  + B)<a[1]) or ((gror[0]*k + B)>gror[1] and (a[0] * k  + B)>a[1]):
                 return [b, c, n]
             else: 
@@ -261,6 +287,7 @@ class triOpt():
             gr_b = self.__grd(gr,kord[1])
             gr_c = self.__grd(gr,kord[2])
             m_const = max(map(self.__norm,[gr_a,gr_b,gr_c]))
+
         if l_const == None:
             yMAX = np.max(kord[...,1])
             yMIN = np.min(kord[...,1])
@@ -276,12 +303,14 @@ class triOpt():
         BC = sqrt( (c[0] - b[0])**2 + (c[1] - b[1])**2 )
         c_const = max(AB,AC,BC)
 
-        n = ceil(log( (2*c_const*l_const)/E, 2/sqrt(3)))
+        n = ceil(log((2*c_const*l_const)/E, 2/sqrt(3)))
         e = (E*l_const)/(4*(m_const*c_const + l_const)*n)
         
         resx,resy = [],[]
+
         if info == True:
             t1 = time.time()
+
         for i in range(n):
             t = self.__step(a,b,c, func,self.__GS, e, gr)
             a = t[0]
@@ -289,13 +318,16 @@ class triOpt():
             c = t[2]
             resx.append(c[0])
             resy.append(c[1])
+
         if info == True:
             T = time.time()
             t2 = float(T - t1)/n               
             time_res = float(T - start_time)
+
         res  = {}
         res['кординаты точки'] = c
         res['значение функции'] = func(c[0],c[1])
+
         if info == True:   
             res['суммарное время'] = time_res
             res['среднее время итерации'] = t2
@@ -307,4 +339,3 @@ class triOpt():
         if plot != False:
             self.__PLOT(kord, c, func, plot[0], plot[1], resx, resy)
         return res
-
