@@ -53,7 +53,7 @@ class triOpt():
                     A = x1
                 else:
                     B = x2
-                    
+
             return [(A+B)/2, ((A+B)/2)*k + bc]
     
     def __PLOT(self, kord, dot, func, color, n, dx, dy):
@@ -236,7 +236,7 @@ class triOpt():
         grkord = self.__grd(gr,x)
 
         if grkord == [0,0]:
-            return [None, None, n]
+            return ["N", "N", n]
 
         gror = [x[0] + grkord[0],x[1] + grkord[1]]
 
@@ -268,8 +268,6 @@ class triOpt():
             второй элемент int -- кучность точек
         info -- дополнительная информация.
         """
-
-    
         a = kord[0]
         c = kord[1]
         b = kord[2]
@@ -296,7 +294,6 @@ class triOpt():
             xMIN = np.min(kord[...,0])
             xl_max = max(gr[0].subs(sp.symbols('x'),xMAX),gr[0].subs(sp.symbols('x'),xMIN))
             l_const = max([xl_max,yl_max])
-        print (l_const,m_const)
 
         AB = sqrt( (a[0] - b[0])**2 + (a[1] - b[1])**2 )
         AC = sqrt( (a[0] - c[0])**2 + (a[1] - c[1])**2 )
@@ -304,7 +301,7 @@ class triOpt():
         c_const = max(AB,AC,BC)
 
         n = ceil(log((2*c_const*l_const)/E, 2/sqrt(3)))
-        e = (E*l_const)/(4*(m_const*c_const + l_const)*n)
+        e = (l_const*E)/(4*(m_const*c_const + l_const)*n)
         
         resx,resy = [],[]
 
@@ -313,11 +310,16 @@ class triOpt():
 
         for i in range(n):
             t = self.__step(a,b,c, func,self.__GS, e, gr)
-            a = t[0]
-            b = t[1]
-            c = t[2]
-            resx.append(c[0])
-            resy.append(c[1])
+            if len(t[0]) != 1:
+                a = t[0]
+                b = t[1]
+                c = t[2]
+                resx.append(c[0])
+                resy.append(c[1])
+            else:
+                resx.append(t[2][0])
+                resy.append(t[2][1])
+                break
 
         if info == True:
             T = time.time()
@@ -339,3 +341,17 @@ class triOpt():
         if plot != False:
             self.__PLOT(kord, c, func, plot[0], plot[1], resx, resy)
         return res
+
+
+optimizer = triOpt()
+
+func = lambda x,y: (x + 1)**2 + (y - 5)**2
+func_sp = (lambda x,y: (x+1)**2 + y**2 - x + sp.exp(x) + sp.exp(y + 1))(sp.symbols('x'),sp.symbols('y'))
+
+kord = np.array([
+    [1,-1],
+    [-1,-1],
+    [0,1]
+])
+
+print(optimizer.opt(kord = kord, func = func, info=True,plot=[True,50], l_const = 401, m_const = 566))
