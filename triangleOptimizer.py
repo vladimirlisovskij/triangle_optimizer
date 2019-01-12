@@ -10,6 +10,7 @@ import time
 
 class triOpt():
     def __GS(self, a,b,e,f):
+        #золотое сечение
         if a[0] == b[0]: 
 
             if a[1] > b[1]:
@@ -57,7 +58,9 @@ class triOpt():
             return [(A+B)/2, ((A+B)/2)*k + bc]
     
     def __PLOT(self, kord, dot, func, color, n, dx, dy):
-    
+        
+        #построение треугольников
+
         a = np.array(kord[0])
         b = np.array(kord[1])
         c = np.array(kord[2])
@@ -209,10 +212,12 @@ class triOpt():
         plt.plot(dx,dy, color = 'b')
         plt.show()
 
-    def __grd (self, gr,kord): 
+    def __grd (self, gr,kord):
+        #градиент в точке 
         return [float(gr[0].subs(sp.symbols('x'),kord[0])),float(gr[1].subs(sp.symbols('y'),kord[1])) ]
 
     def __norm(self, a):
+        #норма
         return sqrt(a[0]**2 + a[1]**2)
 
     def __step(self, a,b,c,func,opt,e,gr):
@@ -220,9 +225,9 @@ class triOpt():
         AC = sqrt( (a[0] - c[0])**2 + (a[1] - c[1])**2 )
         BC = sqrt( (c[0] - b[0])**2 + (c[1] - b[1])**2 )
 
+        #приводим к удобному виду
         if AC == max(AB,AC,BC):
             b,c = c,b
-
         if BC == max(AB,AC,BC):
             a,c = c,a
 
@@ -230,14 +235,17 @@ class triOpt():
         AC = sqrt( (a[0] - c[0])**2 + (a[1] - c[1])**2 )
         BC = sqrt( (c[0] - b[0])**2 + (c[1] - b[1])**2 )
         
+        #вычислем точку для градиента
         n = [(a[0] + b[0])/2,(a[1]+b[1])/2]
         x = opt(n,c,e,func)
-
+        
+        #вычисляем градиент
         grkord = self.__grd(gr,x)
 
         if grkord == [0,0]:
             return ["N", "N", n]
-
+        
+        #определяем направление
         gror = [x[0] + grkord[0],x[1] + grkord[1]]
 
         if c[0] != n[0]:
@@ -273,19 +281,20 @@ class triOpt():
         b = kord[2]
         
         if info == True:
-            start_time = time.time()
+            start_time = time.time() # засекаем время работы
         
         if func_sp == None:
-            func_sp = func(sp.symbols('x'),sp.symbols('y'))
+            func_sp = func(sp.symbols('x'),sp.symbols('y')) # создаем func для SymPy
             
-        gr = [func_sp.diff(sp.symbols('x')),func_sp.diff(sp.symbols('y'))]
+        gr = [func_sp.diff(sp.symbols('x')),func_sp.diff(sp.symbols('y'))] # формула для градиента
         
+        #вычисляем константу m
         if m_const == None:                
             gr_a = self.__grd(gr,kord[0])
             gr_b = self.__grd(gr,kord[1])
             gr_c = self.__grd(gr,kord[2])
             m_const = max(map(self.__norm,[gr_a,gr_b,gr_c]))
-
+        #вычисляем константу l
         if l_const == None:
             yMAX = np.max(kord[...,1])
             yMIN = np.min(kord[...,1])
@@ -295,37 +304,43 @@ class triOpt():
             xl_max = max(gr[0].subs(sp.symbols('x'),xMAX),gr[0].subs(sp.symbols('x'),xMIN))
             l_const = max([xl_max,yl_max])
 
+        #вычисляем диаметр
         AB = sqrt( (a[0] - b[0])**2 + (a[1] - b[1])**2 )
         AC = sqrt( (a[0] - c[0])**2 + (a[1] - c[1])**2 )
         BC = sqrt( (c[0] - b[0])**2 + (c[1] - b[1])**2 )
         c_const = max(AB,AC,BC)
 
+        #вычисляем колличество шагов и точность
         n = ceil(log((2*c_const*l_const)/E, 2/sqrt(3)))
-        e = (l_const*E)/(4*(m_const*c_const + l_const)*n)
+        e = float((l_const*E)/(4*(m_const*c_const + l_const)*n))
         
-        resx,resy = [],[]
-
+        if plot != False:
+            resx,resy = [],[]
+        #засекаем время итераций
         if info == True:
             t1 = time.time()
-
-        for i in range(n):
+        #итерации
+        for _ in range(n):
             t = self.__step(a,b,c, func,self.__GS, e, gr)
             if len(t[0]) != 1:
                 a = t[0]
                 b = t[1]
                 c = t[2]
-                resx.append(c[0])
-                resy.append(c[1])
+                if plot != False:
+                    resx.append(c[0])
+                    resy.append(c[1])
             else:
-                resx.append(t[2][0])
-                resy.append(t[2][1])
+                if plot != False:
+                    resx.append(t[2][0])
+                    resy.append(t[2][1])
                 break
-
+        #вычисление времени работы и итераций
         if info == True:
             T = time.time()
             t2 = float(T - t1)/n               
             time_res = float(T - start_time)
 
+        #результат
         res  = {}
         res['кординаты точки'] = c
         res['значение функции'] = func(c[0],c[1])
@@ -337,7 +352,7 @@ class triOpt():
             res['константа M'] = m_const
             res['колличество шагов'] = n
             res['точность одномерных задач'] = e
-            
+        #построение графика
         if plot != False:
             self.__PLOT(kord, c, func, plot[0], plot[1], resx, resy)
         return res
