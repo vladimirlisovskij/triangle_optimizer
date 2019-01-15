@@ -207,7 +207,10 @@ class triOpt():
         ax.scatter(dot[0],dot[1], func(dot[0],dot[1]), color = 'b')
         plt.show()    
         
-        plt.scatter(xe,ye, color = colors)
+        if colors != None:
+            plt.scatter(xe,ye, color = colors)
+        else:
+            plt.fill(kord[...,0],kord[...,1])
         plt.scatter(dot[0],dot[1], color = 'b')
         plt.plot(dx,dy, color = 'b')
         plt.show()
@@ -243,7 +246,7 @@ class triOpt():
         grkord = self.__grd(gr,x)
 
         if grkord == [0,0]:
-            return ["N", "N", n]
+            return [n]
         
         #определяем направление
         gror = [x[0] + grkord[0],x[1] + grkord[1]]
@@ -298,10 +301,10 @@ class triOpt():
         if l_const == None:
             yMAX = np.max(kord[...,1])
             yMIN = np.min(kord[...,1])
-            yl_max = max(gr[1].subs(sp.symbols('y'),yMAX),gr[1].subs(sp.symbols('y'),yMIN))
+            yl_max = max(float(gr[1].subs(sp.symbols('y'),yMAX)),float(gr[1].subs(sp.symbols('y'),yMIN)))
             xMAX = np.max(kord[...,0])
             xMIN = np.min(kord[...,0])
-            xl_max = max(gr[0].subs(sp.symbols('x'),xMAX),gr[0].subs(sp.symbols('x'),xMIN))
+            xl_max = max(float(gr[0].subs(sp.symbols('x'),xMAX)),float(gr[0].subs(sp.symbols('x'),xMIN)))
             l_const = max([xl_max,yl_max])
 
         #вычисляем диаметр
@@ -312,7 +315,7 @@ class triOpt():
 
         #вычисляем колличество шагов и точность
         n = ceil(log((2*c_const*l_const)/E, 2/sqrt(3)))
-        e = float((l_const*E)/(4*(m_const*c_const + l_const)*n))
+        e = (E)/(m_const*c_const*n)
         
         if plot != False:
             resx,resy = [],[]
@@ -322,7 +325,7 @@ class triOpt():
         #итерации
         for _ in range(n):
             t = self.__step(a,b,c, func,self.__GS, e, gr)
-            if len(t[0]) != 1:
+            if len(t) != 1:
                 a = t[0]
                 b = t[1]
                 c = t[2]
@@ -331,8 +334,8 @@ class triOpt():
                     resy.append(c[1])
             else:
                 if plot != False:
-                    resx.append(t[2][0])
-                    resy.append(t[2][1])
+                    resx.append(t[0])
+                    resy.append(t[1])
                 break
         #вычисление времени работы и итераций
         if info == True:
@@ -352,6 +355,7 @@ class triOpt():
             res['константа M'] = m_const
             res['колличество шагов'] = n
             res['точность одномерных задач'] = e
+
         #построение графика
         if plot != False:
             self.__PLOT(kord, c, func, plot[0], plot[1], resx, resy)
