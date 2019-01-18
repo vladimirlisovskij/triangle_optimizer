@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
 import matplotlib.cm as cm
+import matplotlib.tri as tri
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import sympy as sp
@@ -192,27 +193,22 @@ class triOpt():
                 ze.append(func(X,Y))
 
         fig = plt.figure()
-        ax  = fig.add_subplot(111, projection = '3d')
-
+        ax  = fig.add_subplot(121, projection = '3d')
+        
         if color == True:
-            cmap = cm.get_cmap('hot')
-            normalize = clr.Normalize(vmin=min(ze), vmax=max(ze))
-            colors = [cmap(normalize(value)) for value in ze]
+            ax.plot_trisurf(xe, ye, ze, cmap = cm.hot)
         else:
-            colors = None
-
-        
-        
-        ax.scatter(xe, ye, ze, color = colors)
-        ax.scatter(dot[0],dot[1], func(dot[0],dot[1]), color = 'b')
-        plt.show()    
-        
-        if colors != None:
-            plt.scatter(xe,ye, color = colors)
+            ax.plot_trisurf(xe, ye, ze, cmap = cm.hot)
+        ax.scatter(dot[0],dot[1], func(dot[0],dot[1]), color = 'b') 
+                
+        x = tri.Triangulation(xe,ye)
+        ax2 = fig.add_subplot(122)
+        if color == True:
+            ax2.tricontourf(x, ze, cmap = cm.hot)
         else:
-            plt.fill(kord[...,0],kord[...,1])
-        plt.scatter(dot[0],dot[1], color = 'b')
-        plt.plot(dx,dy, color = 'b')
+            ax2.fill(kord[...,0],kord[...,1])
+        ax2.scatter(dot[0],dot[1], color = 'b')
+        ax2.plot(dx,dy, color = 'b')
         plt.show()
 
     def __grd (self, gr,kord):
@@ -288,6 +284,8 @@ class triOpt():
         
         if func_sp == None:
             func_sp = func(sp.symbols('x'),sp.symbols('y')) # создаем func для SymPy
+        else:
+            func_sp = func_sp(sp.symbols('x'),sp.symbols('y'))
             
         gr = [func_sp.diff(sp.symbols('x')),func_sp.diff(sp.symbols('y'))] # формула для градиента
         
