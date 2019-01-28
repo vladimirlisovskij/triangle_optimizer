@@ -5,7 +5,7 @@ from triangleOptimizer import triOpt
     
 func = lambda x,y: (x+1)**2 + y**2 + np.exp(x) + np.exp(y+1)
 func_sp = (lambda x,y: (x+1)**2 + y**2 + sp.exp(x) + sp.exp(y+1))
-kord = np.array([
+koor = np.array([
     [1,1],
     [-1,-1],
     [-1,1]
@@ -13,4 +13,4 @@ kord = np.array([
 
 optimizer = triOpt()
 
-print(optimizer.opt(func=func,func_sp= func_sp,kord=kord,info = True,plot = [True,15]))
+print(optimizer.opt(func=func,func_sp= func_sp,koor=koor,info = True,plot = [True,15]))

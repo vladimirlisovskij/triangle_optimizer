@@ -7,11 +7,18 @@ import numpy as np
 import sympy as sp
 from math import sqrt, ceil, log
 import time
+import array as arr
 
 
 class triOpt():
-    def __GS(self, a,b,e,f):
-        #золотое сечение
+    def __GS(self, a,b,e,fun):
+        """        
+        Золотое сечение
+
+        a,b -- границы отрезка;
+        e -- точность;
+        fun -- функция.
+        """
         if a[0] == b[0]: 
 
             if a[1] > b[1]:
@@ -22,11 +29,11 @@ class triOpt():
 
             F = (1 + sqrt(5))/2  
 
-            while (B-A)/2 >= e:            
+            while (B-A)/2 >= e:       
                 y1 = B - (B-A)/F
                 y2 = A + (B-A)/F
 
-                if f(a[0],y1) >= f(a[0],y2):
+                if fun(a[0],y1) >= fun(a[0],y2):
                     A = y1
                 else:
                     B = y2
@@ -37,8 +44,8 @@ class triOpt():
             if a[0] > b[0]:
                 a,b = b,a
 
-            k = (a[1] - b[1])/(a[0] - b[0])
-            bc = a[1] - a[0]*k
+            k_coef = (a[1] - b[1])/(a[0] - b[0])
+            b_coef = a[1] - a[0]*k_coef
 
             A = a[0]
             B = b[0]
@@ -47,179 +54,208 @@ class triOpt():
 
             while (B-A)/2 >= e:
                 x1 = B - (B-A)/F
-                y1 = x1*k + bc
+                y1 = x1*k_coef + b_coef
                 x2 = A + (B-A)/F
-                y2 = x2*k + bc
+                y2 = x2*k_coef + b_coef
 
-                if f(x1, y1) >= f(x2, y2):
+                if fun(x1, y1) >= fun(x2, y2):
                     A = x1
                 else:
                     B = x2
 
-            return [(A+B)/2, ((A+B)/2)*k + bc]
+            return [(A+B)/2, ((A+B)/2)*k_coef + b_coef]
     
-    def __PLOT(self, kord, dot, func, color, n, dx, dy):
-        
-        #построение треугольников
+    def __PLOT(self, koor, dot, fun, color, n, dx, dy):
+        """
+        Построение треугольников
 
-        a = np.array(kord[0])
-        b = np.array(kord[1])
-        c = np.array(kord[2])
-        
-        xe = []
-        ye = []
-        ze = []
+        koor -- координаты вершин;
+        fun -- функция;
+        color -- стоит ли делать заливку;
+        n -- плотность точек;
+        x_dots,y_dots -- результаты итераций.
+        """
 
-        ans = {
-        'AB' : True,
-        'AC' : True,
-        'BC' : True
-        }
+        a = koor[0]
+        b = koor[1]
+        c = koor[2]
+        
+        #точки треугольника
+        xe = arr.array('f')
+        ye = arr.array('f')
+        ze = arr.array('f')
+
+        #система неравенств
+        ans = arr.array('i',[0,0,0])
+
+        """
+        Точки лежат ниже прямой -- 1;
+        точки лежат выше прямой  -- 2;
+        точки лежат левее прямой  -- 3;
+        точки лежат правее прямой -- 4.
+        
+        AB -- ans[0];
+        AC -- ans[1];
+        BC -- ans[2].
+        """
 
         if a[0] != b[0]:
             kAB = (a[1] - b[1])/(a[0] - b[0])
             bAB = a[1] - kAB*a[0]
 
             if kAB*c[0] + bAB < c[1]:
-                ans['AB'] = "Yfalse"
+                ans[0] = 2
             else:
-                ans['AB'] = "Ytrue"
-        else:        
-            kAB = False
-            bAB = False
-
+                ans[0] = 1
+        else:
             if a[0] < c[0]:
-                ans['AB'] = "xfalse"
+                ans[0] = 4
             else:
-                ans['AB'] = "xtrue"
+                ans[0] = 3
 
         if a[0] != c[0]:
             kAC = (a[1] - c[1])/(a[0] - c[0])
             bAC = a[1] - kAC*a[0]
 
             if kAC*b[0] + bAC < b[1]:
-                ans['AC'] = "Yfalse"
+                ans[1] = 2
             else:
-                ans['AC'] = "Ytrue"
+                ans[1] = 1
         else:
-            kAC = False
-            bAC = False
-
             if a[0] < b[0]:
-                ans['AC'] = "xfalse"
+                ans[1] = 4
             else:
-                ans['AC'] = "xtrue"
+                ans[1] = 3
 
         if c[0] != b[0]: 
             kBC = (c[1] - b[1])/(c[0] - b[0])
             bBC = c[1] - kBC*c[0]  
 
             if kBC*a[0] + bBC < a[1]:
-                ans['BC'] = "Yfalse"
+                ans[2] = 2
             else:
-                ans['BC'] = "Ytrue"
+                ans[2] = 1
         else:
-            kBC = False
-            bBC = False   
-
             if c[0] < a[0]:
-                ans['BC'] = "xfalse"
+                ans[2] = 4
             else:
-                ans['BC'] = "xtrue"
+                ans[2] = 3
 
-
-        yMAX = np.max(kord[...,1])
-        yMIN = np.min(kord[...,1])
-        xMAX = np.max(kord[...,0])
-        xMIN = np.min(kord[...,0])
-
+        yMAX = np.max(koor[...,1])
+        yMIN = np.min(koor[...,1])
+        xMAX = np.max(koor[...,0])
+        xMIN = np.min(koor[...,0])
 
         for X in np.linspace (xMIN, xMAX,n):
             for Y in np.linspace (yMIN, yMAX, n):
-                if ans["AB"] == 'Ytrue' or ans["AB"] == 'Yfalse':
+                if ans[0] == 1 or ans[0] == 2:
                     ytst = kAB*X + bAB
 
-                    if ans["AB"] == "Ytrue":
+                    if ans[0] == 1:
                         if ytst < Y:
                             continue
-                    elif ans["AB"] == "Yfalse":
+                    elif ans[0] == 2:
                         if ytst > Y:
                             continue
                 else:
-                    if ans["AB"] == "xtrue":
+                    if ans[0] == 3:
                         if a[0] < X:
                             continue
-                    elif ans["AB"] == "xfalse":
+                    elif ans[0] == 4:
                         if a[0] > X:
                             continue
                             
                             
-                if ans["BC"] == 'Ytrue' or ans["BC"] == 'Yfalse':
+                if ans[2] == 1 or ans[2] == 2:
                     ytst = kBC*X + bBC
 
-                    if ans["BC"] == "Ytrue":
+                    if ans[2] == 1:
                         if ytst < Y:
                             continue
-                    elif ans["BC"] == "Yfalse":
+                    elif ans[2] == 2:
                         if ytst > Y:
                             continue
                 else:
-                    if ans["BC"] == "xtrue":
+                    if ans[2] == 3:
                         if b[0] < X:
                             continue
-                    elif ans["BC"] == "xfalse":
+                    elif ans[2] == 4:
                         if b[0] > X:
                             continue  
                         
-                if ans["AC"] == 'Ytrue' or ans["AC"] == 'Yfalse':
+                if ans[1] == 1 or ans[1] == 2:
                     ytst = kAC*X + bAC
 
-                    if ans["AC"] == "Ytrue":
+                    if ans[1] == 1:
                         if ytst < Y:
                             continue
-                    elif ans["AC"] == "Yfalse":
+                    elif ans[1] == 2:
                         if ytst > Y:
                             continue
                 else:
-                    if ans["AC"] == "xtrue":
+                    if ans[1] == 3:
                         if a[0] < X:
                             continue
-                    elif ans["AC"] == "xfalse":
+                    elif ans[1] == 4:
                         if a[0] > X:
                             continue 
 
                 xe.append(X)
                 ye.append(Y)
-                ze.append(func(X,Y))
-
+                ze.append(fun(X,Y))
+                
+        #построение
         fig = plt.figure()
         ax  = fig.add_subplot(121, projection = '3d')
-        
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('f(X,Y)')
         if color == True:
             ax.plot_trisurf(xe, ye, ze, cmap = cm.hot)
         else:
             ax.plot_trisurf(xe, ye, ze, cmap = cm.hot)
-        ax.scatter(dot[0],dot[1], func(dot[0],dot[1]), color = 'b') 
+        ax.scatter(dot[0],dot[1], fun(dot[0],dot[1]), color = 'b') 
                 
         x = tri.Triangulation(xe,ye)
         ax2 = fig.add_subplot(122)
         if color == True:
             ax2.tricontourf(x, ze, cmap = cm.hot)
         else:
-            ax2.fill(kord[...,0],kord[...,1])
+            ax2.fill(koor[...,0],koor[...,1])
         ax2.scatter(dot[0],dot[1], color = 'b')
         ax2.plot(dx,dy, color = 'b')
+
+        plt.xlabel("x")
+        plt.ylabel("y")
+
         plt.show()
 
-    def __grd (self, gr,kord):
-        #градиент в точке 
-        return [float(gr[0].subs(sp.symbols('x'),kord[0])),float(gr[1].subs(sp.symbols('y'),kord[1])) ]
+    def __grd (self, gr,koor):
+        """
+        Градиент в точке 
+        
+        gr -- формула градиента;
+        koor -- координата точкию
+        """
+        return (float(gr[0].subs(sp.symbols('x'),koor[0])),float(gr[1].subs(sp.symbols('y'),koor[1])))
 
     def __norm(self, a):
-        #норма
+        """
+        Норма
+        
+        a -- вектор.
+        """
         return sqrt(a[0]**2 + a[1]**2)
 
-    def __step(self, a,b,c,func,opt,e,gr):
+    def __step(self, a,b,c,fun,e,gr):
+        """
+        Шаг алгоритма
+        
+        a,b,c -- вершины треугольника;
+        fun -- функция;
+        e -- точность;
+        gr -- формула градиента.        
+        """
         AB = sqrt( (a[0] - b[0])**2 + (a[1] - b[1])**2 )
         AC = sqrt( (a[0] - c[0])**2 + (a[1] - c[1])**2 )
         BC = sqrt( (c[0] - b[0])**2 + (c[1] - b[1])**2 )
@@ -235,36 +271,36 @@ class triOpt():
         BC = sqrt( (c[0] - b[0])**2 + (c[1] - b[1])**2 )
         
         #вычислем точку для градиента
-        n = [(a[0] + b[0])/2,(a[1]+b[1])/2]
-        x = opt(n,c,e,func)
+        n = ((a[0] + b[0])/2,(a[1]+b[1])/2)
+        x = self.__GS(n,c,e,fun)
         
         #вычисляем градиент
         grkord = self.__grd(gr,x)
 
         if grkord == [0,0]:
-            return [n]
+            return (n,)
         
         #определяем направление
-        gror = [x[0] + grkord[0],x[1] + grkord[1]]
+        gror = (x[0] + grkord[0],x[1] + grkord[1])
 
         if c[0] != n[0]:
             k = (c[1] - n[1])/(c[0] - n[0])
             B = n[1] - n[0] * k
 
             if ((gror[0]*k + B)<gror[1] and (a[0] * k  + B)<a[1]) or ((gror[0]*k + B)>gror[1] and (a[0] * k  + B)>a[1]):
-                return [b, c, n]
+                return (b, c, n)
             else: 
-                return [a, c, n]
+                return (a, c, n)
         else:
             if ((gror[0]<c[0]) and (a[0] < c[0])) or ((gror[0]>c[0]) and (a[0] > c[0])) :
-                return [b, c, n]
+                return (b, c, n)
             else:
-                return [a, c, n]
+                return (a, c, n)
 
-    def opt(self, kord, func, func_sp = None, m_const = None, l_const = None, E = 0.001, plot = False, info = False):
+    def opt(self, koor, func, func_sp = None, m_const = None, l_const = None, E = 0.001, plot = False, info = False):
 
         """
-        kord -- массив координат вершин треугольника;
+        koor -- массив координат вершин треугольника;
         func -- функция, которую нужно минимизировать;
         func_sp -- func для SymPy, стоит использовать если заданая фунция содержит логарифмы и тригонометрические фунции;
         m_const -- константа Липшица для фунции;
@@ -275,9 +311,9 @@ class triOpt():
             второй элемент int -- кучность точек
         info -- дополнительная информация.
         """
-        a = kord[0]
-        c = kord[1]
-        b = kord[2]
+        a = koor[0]
+        c = koor[1]
+        b = koor[2]
         
         if info == True:
             start_time = time.time() # засекаем время работы
@@ -291,17 +327,17 @@ class triOpt():
         
         #вычисляем константу m
         if m_const == None:                
-            gr_a = self.__grd(gr,kord[0])
-            gr_b = self.__grd(gr,kord[1])
-            gr_c = self.__grd(gr,kord[2])
+            gr_a = self.__grd(gr,koor[0])
+            gr_b = self.__grd(gr,koor[1])
+            gr_c = self.__grd(gr,koor[2])
             m_const = max(map(self.__norm,[gr_a,gr_b,gr_c]))
         #вычисляем константу l
         if l_const == None:
-            yMAX = np.max(kord[...,1])
-            yMIN = np.min(kord[...,1])
+            yMAX = max(koor[...,1])
+            yMIN = min(koor[...,1])
             yl_max = max(float(gr[1].subs(sp.symbols('y'),yMAX)),float(gr[1].subs(sp.symbols('y'),yMIN)))
-            xMAX = np.max(kord[...,0])
-            xMIN = np.min(kord[...,0])
+            xMAX = max(koor[...,0])
+            xMIN = min(koor[...,0])
             xl_max = max(float(gr[0].subs(sp.symbols('x'),xMAX)),float(gr[0].subs(sp.symbols('x'),xMIN)))
             l_const = max([xl_max,yl_max])
 
@@ -316,13 +352,13 @@ class triOpt():
         e = (E)/(m_const*c_const*n)
         
         if plot != False:
-            resx,resy = [],[]
+            resx,resy = arr.array('f',[]),arr.array('f',[])
         #засекаем время итераций
         if info == True:
             t1 = time.time()
         #итерации
         for _ in range(n):
-            t = self.__step(a,b,c, func,self.__GS, e, gr)
+            t = self.__step(a,b,c, func, e, gr)
             if len(t) != 1:
                 a = t[0]
                 b = t[1]
@@ -356,5 +392,5 @@ class triOpt():
 
         #построение графика
         if plot != False:
-            self.__PLOT(kord, c, func, plot[0], plot[1], resx, resy)
+            self.__PLOT(koor, c, func, plot[0], plot[1], resx, resy)
         return res
