@@ -254,7 +254,7 @@ class TriOpt:
         return sqrt(a[0]**2 + a[1]**2)
 
     @staticmethod
-    def __step(a, b, c, fun, e, gr,l_small):
+    def __step(a, b, c, fun, e, gr, l_small):
         """
         Шаг алгоритма
 
@@ -287,7 +287,7 @@ class TriOpt:
         # вычисляем градиент
         grkord = TriOpt.__grd(gr, x)
 
-        if grkord == (0,0):
+        if grkord == (0, 0):
             return n,
 
         # определяем направление
@@ -309,21 +309,20 @@ class TriOpt:
                 return a, c, n
 
     @staticmethod
-    def __new_m(a,b,c,func,gr):
+    def __new_m(a, b, c, gr):
         """
         Функция для оценки констаты М на вершинах
 
         :param a: вершина 1
         :param b: вершина 2
         :param c: вершина 3
-        :param func: функция
         :param gr: формула градиента
         :return: константа М
         """
         a1 = TriOpt.__norm(TriOpt.__grd(gr, a))
         b1 = TriOpt.__norm(TriOpt.__grd(gr, b))
         c1 = TriOpt.__norm(TriOpt.__grd(gr, c))
-        return max(a1,b1,c1)
+        return max(a1, b1, c1)
 
     @staticmethod
     def opt(koor: np.ndarray, func: 'function for minimize', func_sp: 'function to sympy' = None, m_const: float = None,
@@ -389,7 +388,7 @@ class TriOpt:
 
         # вычисляем константу m
         if m_const is None:
-            m_const = TriOpt.__new_m(a,b,c,func,gr)
+            m_const = TriOpt.__new_m(a, b, c, gr)
         if m_const <= 0:
             return a
 
@@ -397,7 +396,7 @@ class TriOpt:
         if l_const is None and n is None:
             gr_x = (gr[0].diff('x'), gr[0].diff('y'))
             gr_y = (gr[1].diff('x'), gr[1].diff('y'))
-            l_const = max(TriOpt.__new_m(a,b,c,func,gr_x),TriOpt.__new_m(a,b,c,func,gr_y))
+            l_const = max(TriOpt.__new_m(a, b, c, gr_x), TriOpt.__new_m(a, b, c, gr_y))
             if l_const >= c_const:
                 l_small = True
 
@@ -417,7 +416,7 @@ class TriOpt:
         # итерации
         for _ in range(n):
             it += 1
-            t = TriOpt.__step(a, b, c, func, e, gr, l_small = l_small)
+            t = TriOpt.__step(a, b, c, func, e, gr, l_small)
             if len(t) != 1:
                 a = t[0]
                 b = t[1]
@@ -447,12 +446,12 @@ class TriOpt:
 
         # результат
         res = {}
-        if len(resx)!=0 & len(resy)!=0:
+        if len(resx) != 0 and len(resy) != 0:
             res['point coordinates'] = (resx[-1], resy[-1])
             res['function value'] = func(resx[-1], resy[-1])
         else:
             res['point coordinates'] = a
-            res['function value'] = func(a[0],a[1])
+            res['function value'] = func(a[0], a[1])
 
         if info:
             res['total time'] = time_res
@@ -468,5 +467,5 @@ class TriOpt:
 
         # построение графика
         if plot is not False:
-            TriOpt.__PLOT(koor, (resx[-1],resy[-1]), func, plot[0], plot[1], resx, resy)
+            TriOpt.__PLOT(koor, (resx[-1], resy[-1]), func, plot[0], plot[1], resx, resy)
         return res
