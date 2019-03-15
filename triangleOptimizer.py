@@ -15,10 +15,14 @@ class TriOpt:
         """
         Золотое сечение
 
-        a,b -- границы отрезка;
-        e -- точность;
-        fun -- функция.
+
+        :param a: конец отрезка 1
+        :param b: конец отрезка 2
+        :param e: точность
+        :param fun: функция
+        :return: точка минимума
         """
+
         if a[0] == b[0]:
 
             if a[1] > b[1]:
@@ -70,11 +74,14 @@ class TriOpt:
         """
         Построение треугольников
 
-        koor -- координаты вершин;
-        fun -- функция;
-        color -- стоит ли делать заливку;
-        n -- плотность точек;
-        x_dots,y_dots -- результаты итераций.
+        :param koor: двумерный массив координат
+        :param dot: точка минимума
+        :param fun: функция
+        :param color: стоит ли делать заливку
+        :param n: плотность точек
+        :param dx: х-координата результатов итерации
+        :param dy: у-координата результатов итерации
+        :return:
         """
 
         a = koor[0]
@@ -229,29 +236,36 @@ class TriOpt:
         """
         Градиент в точке
 
-        gr -- формула градиента;
-        koor -- координата точкию
+        :param gr: формула градиента
+        :param koor: двумерный массив координат
+        :return: вектор
         """
-        return float(gr[0].subs(sp.symbols('x'), koor[0])), float(gr[1].subs(sp.symbols('y'), koor[1]))
+        return (float(gr[0].subs(sp.symbols('x'), koor[0]).subs(sp.symbols('y'), koor[1])),
+               float(gr[1].subs(sp.symbols('x'), koor[0]).subs(sp.symbols('y'), koor[1])))
 
     @staticmethod
     def __norm(a):
         """
         Норма
 
-        a -- вектор.
+        :param a: координаты точки
+        :return: длина вектора
         """
         return sqrt(a[0]**2 + a[1]**2)
 
     @staticmethod
-    def __step(a, b, c, fun, e, gr):
+    def __step(a, b, c, fun, e, gr,l_small):
         """
         Шаг алгоритма
 
-        a,b,c -- вершины треугольника;
-        fun -- функция;
-        e -- точность;
-        gr -- формула градиента.
+        :param a: вершина 1
+        :param b: вершина 2
+        :param c: вершина 3
+        :param fun: функция
+        :param e: точность
+        :param gr: формула градиента
+        :param l_small: стоит ли решать одномерные задачи
+        :return: точка минимума на итерации
         """
         AB = sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
         AC = sqrt((a[0] - c[0])**2 + (a[1] - c[1])**2)
@@ -265,12 +279,15 @@ class TriOpt:
 
         # вычислем точку для градиента
         n = ((a[0] + b[0])/2, (a[1]+b[1])/2)
-        x = TriOpt.__GS(n, c, e, fun)
+        if l_small:
+            x = n
+        else:
+            x = TriOpt.__GS(n, c, e, fun)
 
         # вычисляем градиент
         grkord = TriOpt.__grd(gr, x)
 
-        if grkord == (0, 0):
+        if grkord == (0,0):
             return n,
 
         # определяем направление
@@ -292,29 +309,61 @@ class TriOpt:
                 return a, c, n
 
     @staticmethod
+    def __new_m(a,b,c,func,gr):
+        """
+        Функция для оценки констаты М на вершинах
+
+        :param a: вершина 1
+        :param b: вершина 2
+        :param c: вершина 3
+        :param func: функция
+        :param gr: формула градиента
+        :return: константа М
+        """
+        a1 = TriOpt.__norm(TriOpt.__grd(gr, a))
+        b1 = TriOpt.__norm(TriOpt.__grd(gr, b))
+        c1 = TriOpt.__norm(TriOpt.__grd(gr, c))
+        return max(a1,b1,c1)
+
+    @staticmethod
     def opt(koor: np.ndarray, func: 'function for minimize', func_sp: 'function to sympy' = None, m_const: float = None,
             l_const: float = None, E: float = 0.001, plot: tuple = False, info: bool = False, n: int = None) -> dict:
         """
         Метод для минимизации функции
+        
+        :param koor: массив координат вершин треугольника
+        :param func: функция, которую нужно минимизировать
+        :param func_sp: func для SymPy
+        :param m_const: константа Липшица для фунции
+        :param l_const: константа Липшица для градиентов функции
+        :param E: требуемая точность
+        :param plot: построение графиков
+            plot[0] стоит ли делать заливку;
+            plot[0] кучность точек
+        :param info: дополнительная информация
+        :param n: колличество шагов
+        :return: кооординаты точки, значение функции. Дополнительная информация, если был передан параметр info
 
-        in:
-            koor [np.ndarray 3x2] -- массив координат вершин треугольника;
-            func -- функция, которую нужно минимизировать;
-            func_sp -- func для SymPy;
-            m_const [float] -- константа Липшица для фунции;
-            l_const [float]  -- константа Липшица для градиентов функции;
-            E [float] -- требуемая точность;
-            plot [tuple 2x1] -- построение графиков;
-                первый элемент [bool] -- стоит ли делать заливку;
-                второй элемент [int] -- кучность точек;
-            n [int] -- колличество шагов;
-            info [float] -- дополнительная информация.
-        out:
-            [dict] -- кооординаты точки, значение функции.
-            Если был передан параметр info = True:
-            время работы, среднее время итерации, значение констант Липшица, колличество шагов,
-            точность решения одномерных задач.
+        Example:
+
+        func = lambda x,y: (x+1)**2 + y**2 + np.exp(x) + np.exp(y+1)
+        func_sp = (lambda x,y: (x+1)**2 + y**2 + sp.exp(x) + sp.exp(y+1))
+        koor = np.array([
+            [1,1],
+            [-1,-1],
+            [-1,1]
+        ])
+
+        res = TriOpt.opt(
+            func=func,
+            func_sp = func_sp,
+            koor=koor,
+            info = True,
+            plot = (True,50),
+            E=10**(-3)
+            )
         """
+
         a = koor[0]
         c = koor[1]
         b = koor[2]
@@ -329,41 +378,46 @@ class TriOpt:
 
         gr = [func_sp.diff(sp.symbols('x')), func_sp.diff(sp.symbols('y'))]  # формула для градиента
 
-        # вычисляем константу m
-        if m_const is None:
-            gr_a = TriOpt.__grd(gr, koor[0])
-            gr_b = TriOpt.__grd(gr, koor[1])
-            gr_c = TriOpt.__grd(gr, koor[2])
-            m_const = max(map(TriOpt.__norm, [gr_a, gr_b, gr_c]))
-        # вычисляем константу l
-        if l_const is None and n is None:
-            yMAX = max(koor[..., 1])
-            yMIN = min(koor[..., 1])
-            yl_max = max(float(gr[1].subs(sp.symbols('y'), yMAX)), float(gr[1].subs(sp.symbols('y'), yMIN)))
-            xMAX = max(koor[..., 0])
-            xMIN = min(koor[..., 0])
-            xl_max = max(float(gr[0].subs(sp.symbols('x'), xMAX)), float(gr[0].subs(sp.symbols('x'), xMIN)))
-            l_const = max([xl_max, yl_max])
-
         # вычисляем диаметр
         AB = sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
         AC = sqrt((a[0] - c[0])**2 + (a[1] - c[1])**2)
         BC = sqrt((c[0] - b[0])**2 + (c[1] - b[1])**2)
         c_const = max(AB, AC, BC)
 
+
+        l_small = False
+
+        # вычисляем константу m
+        if m_const is None:
+            m_const = TriOpt.__new_m(a,b,c,func,gr)
+        if m_const <= 0:
+            return a
+
+        # вычисляем константу l
+        if l_const is None and n is None:
+            gr_x = (gr[0].diff('x'), gr[0].diff('y'))
+            gr_y = (gr[1].diff('x'), gr[1].diff('y'))
+            l_const = max(TriOpt.__new_m(a,b,c,func,gr_x),TriOpt.__new_m(a,b,c,func,gr_y))
+            if l_const >= c_const:
+                l_small = True
+
         # вычисляем колличество шагов и точность
         if n is None:
             n = ceil(log((2*c_const*l_const)/E, 2/sqrt(3)))
         e = E/(m_const*c_const*n)
 
-        if plot is not False:
-            resx, resy = arr.array('f', []), arr.array('f', [])
+
+        resx, resy = arr.array('f', []), arr.array('f', [])
+
         # засекаем время итераций
         if info:
             t1 = time.time()
+        it = 0
+
         # итерации
         for _ in range(n):
-            t = TriOpt.__step(a, b, c, func, e, gr)
+            it += 1
+            t = TriOpt.__step(a, b, c, func, e, gr, l_small = l_small)
             if len(t) != 1:
                 a = t[0]
                 b = t[1]
@@ -373,9 +427,18 @@ class TriOpt:
                     resy.append(c[1])
             else:
                 if plot is not False:
-                    resx.append(t[0])
-                    resy.append(t[1])
+                    resx.append(t[0][0])
+                    resy.append(t[0][1])
                 break
+
+            # вычисляем диаметр
+            AB = sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+            AC = sqrt((a[0] - c[0]) ** 2 + (a[1] - c[1]) ** 2)
+            BC = sqrt((c[0] - b[0]) ** 2 + (c[1] - b[1]) ** 2)
+            c_const = max(AB, AC, BC)
+            if l_const >= c_const:
+                l_small = True
+
         # вычисление времени работы и итераций
         if info:
             T = time.time()
@@ -384,8 +447,12 @@ class TriOpt:
 
         # результат
         res = {}
-        res['point coordinates'] = c
-        res['function value'] = func(c[0], c[1])
+        if len(resx)!=0 & len(resy)!=0:
+            res['point coordinates'] = (resx[-1], resy[-1])
+            res['function value'] = func(resx[-1], resy[-1])
+        else:
+            res['point coordinates'] = a
+            res['function value'] = func(a[0],a[1])
 
         if info:
             res['total time'] = time_res
@@ -393,10 +460,13 @@ class TriOpt:
             if l_const:
                 res['constant L'] = l_const
             res['constant M'] = m_const
-            res['number of steps'] = n
+            res['n'] = n
+            res['number of steps'] = it
             res['accuracy of one-dimensional tasks'] = e
+            if l_small:
+                res['l small'] = True
 
         # построение графика
         if plot is not False:
-            TriOpt.__PLOT(koor, c, func, plot[0], plot[1], resx, resy)
+            TriOpt.__PLOT(koor, (resx[-1],resy[-1]), func, plot[0], plot[1], resx, resy)
         return res
